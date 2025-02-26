@@ -82,7 +82,7 @@ exports.deleteAppointment = async (req, res) => {
         if (!appointment) return res.status(404).json({ error: "Appointment not found" });
 
         await appointment.deleteOne();
-        res.json({ message: "Appointment deleted successfully" });
+        res.json({ message: "appointment deleted successfully" });
     } catch (error) {
         res.status(500).json({ error: "Server error" });
     }
