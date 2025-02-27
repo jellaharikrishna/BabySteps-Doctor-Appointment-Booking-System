@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 // Enum for duration (Allowed durations in minutes)
-const durationEnum = [30, 45, 60];
+const durationEnum = [30, 60];
 
 // Enum for appointment types
 const appointmentTypeEnum = [

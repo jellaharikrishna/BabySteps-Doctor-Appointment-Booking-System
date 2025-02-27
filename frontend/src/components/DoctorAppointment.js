@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import {Row, Col, Card, Form, Button, Modal, Table } from "react-bootstrap";
+import {Row, Col, Card, Form, Button, Modal, Table, Spinner } from "react-bootstrap";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-const durationList = [30, 45, 60];
+const durationList = [30, 60];
 
 const appointmentTypeList = [
     "Routine Check-Up",
@@ -25,6 +25,7 @@ const DoctorAppointment = () => {
     const [availableSlots, setAvailableSlots] = useState([]);
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedSlot, setSelectedSlot] = useState(null);
+    const [loading, setLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [viewModal, setViewModal] = useState(false);
     const [formData, setFormData] = useState({ patientName: "", duration: "", appointmentType: "", notes: "" });
@@ -34,6 +35,7 @@ const DoctorAppointment = () => {
     const url = 'https://babysteps-doctor-appointment-booking.onrender.com'
 
     useEffect(() => {
+        setLoading(true);
         fetchDoctors();
         fetchAppointments();
     }, []);
@@ -41,6 +43,7 @@ const DoctorAppointment = () => {
     const fetchDoctors = async () => {
         try {
             const response = await axios.get(`${url}/doctors`);
+            setLoading(false);
             setDoctors(response.data);
         } catch (error) {
             console.error("Error fetching doctors", error);
@@ -50,6 +53,7 @@ const DoctorAppointment = () => {
     const fetchAppointments = async () => {
         try {
             const response = await axios.get(`${url}/appointments`);
+            setLoading(false);
             setAppointments(response.data);
         } catch (error) {
             console.error("Error fetching appointments", error);
@@ -65,8 +69,8 @@ const DoctorAppointment = () => {
         setSelectedDate(date);
         try {
             const response = await axios.get(`${url}/doctors/${selectedDoctor._id}/slots?date=${date}`);
+            toast.success("fetching available slots")
             setAvailableSlots(response.data);
-            toast.success("fetching slots")
         } catch (error) {
             toast.error("Error fetching slots", error)
             console.error("Error fetching slots", error);
@@ -103,8 +107,8 @@ const DoctorAppointment = () => {
                 patientName: formData.patientName,
                 notes: formData.notes,
             });
-            setAppointments([...appointments, response.data]);
             toast.success("New Appointment Created Successfully!");
+            setAppointments([...appointments, response.data]);            
         }
         fetchAppointments();
         setShowModal(false);
@@ -159,36 +163,39 @@ const DoctorAppointment = () => {
 
     return (
         <div className="mt-4">
-             <div style={{display: "flex", alignItems: "center"}}>
-            <Col>
-                <Col md={6} className="mb-3">
-                    <Card>
-                        <Card.Body>
-                            <Card.Title>Select a Doctor</Card.Title>
-                            <Form.Select onChange={(e) => handleDoctorSelect(e.target.value)}>
-                                <option>Select Doctor</option>
-                                {doctors.map((doctor) => (
-                                    <option key={doctor._id} value={doctor._id}>
-                                        {doctor.name} - {doctor.specialization}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Card.Body>
-                    </Card>
+            <div style={{display: "flex", alignItems: "center"}}>
+                <Col>
+                    <Col md={6} className="mb-3">
+                        <Card>
+                            <Card.Body>
+                                <Card.Title>Select a Doctor</Card.Title>
+                                <Form.Select onChange={(e) => handleDoctorSelect(e.target.value)}>
+                                    {loading ? <option>Initializing...</option> : <option>Select Doctor</option>}
+                                    {doctors.map((doctor) => (
+                                        <option key={doctor._id} value={doctor._id}>
+                                            {doctor.name} - {doctor.specialization}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                    <Col md={6}>
+                        <Card>
+                            <Card.Body>
+                                <Card.Title>Select a Date</Card.Title>
+                                {loading ? <Form.Control type="text" placeholder="Initializing..."  /> : 
+                                <Form.Control type="date" onChange={(e) => handleDateSelect(e.target.value)} />
+                                }
+                            </Card.Body>
+                        </Card>
+                    </Col>
                 </Col>
-                <Col md={6}>
-                    <Card>
-                        <Card.Body>
-                            <Card.Title>Select a Date</Card.Title>
-                            <Form.Control type="date" onChange={(e) => handleDateSelect(e.target.value)} />
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Col>
-            <div>
-               <img style={{ width: "300px", height: "300px"}} src="https://res.cloudinary.com/dmogabwqz/image/upload/v1740539287/3914790_x2xtr8.jpg" alt="img" />
+                <div>
+                <img style={{ width: "300px", height: "300px"}} src="https://res.cloudinary.com/dmogabwqz/image/upload/v1740539287/3914790_x2xtr8.jpg" alt="img" />
+                </div>
             </div>
-            </div>
+
             {selectedDate && availableSlots.length > 0 && (
                 <Row className="mt-3">
                     <Col>
@@ -265,10 +272,11 @@ const DoctorAppointment = () => {
                 </Modal.Body>
             </Modal>
 
-            {appointments.length !== 0 ?
+            
             <Row className="mt-4">
                 <Col>
                     <h4>Upcoming Appointments</h4>
+                    {loading ? <Spinner animation="border" className="d-block mx-auto m-5" /> : 
                     <Table striped bordered hover>
                         <thead>
                             <tr>
@@ -303,11 +311,15 @@ const DoctorAppointment = () => {
                             ))}
                         </tbody>
                     </Table>
+                    }
+                    {!appointments &&
+                    <div style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
+                        <img style={{ width: "300px", height: "300px"}}  src="https://res.cloudinary.com/dmogabwqz/image/upload/v1740632296/3885914_ulzznz.jpg" alt="book your appointment" />
+                        <h3 className="m-5 text-center">Book your appointment now...</h3>
+                    </div>
+                    }
                 </Col>
             </Row>
-            :
-            <h1 className="m-5 text-center">appointments list is empty...</h1>
-            }
         </div>
     );
 };
